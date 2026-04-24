@@ -7,48 +7,51 @@ export async function POST(req: Request) {
     const image = formData.get("image") as File;
     const gender = formData.get("gender") as string;
     const humanAge = formData.get("humanAge") as string;
-    const nation = formData.get("nation") as string;
     const petType = formData.get("petType") as string;
+    const nation = formData.get("nation") as string; // 新增国籍
 
-    if (!image || !gender || !humanAge || !nation) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    // 必传字段校验
+    if (!image || !gender || !humanAge || !petType || !nation) {
+      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    // 国籍风格
+    // 国籍风格描述（后端隐藏，不暴露）
     let nationStyle = "";
-    if (nation === "eastAsia") nationStyle = "East Asian, Chinese face";
-    else if (nation === "european") nationStyle = "European, deep facial contours";
-    else nationStyle = "Japanese Korean soft delicate face";
+    switch (nation) {
+      case "eastAsia":
+        nationStyle = "East Asian, Chinese oriental appearance";
+        break;
+      case "european":
+        nationStyle = "European and American, deep stereo facial features";
+        break;
+      case "japanKorea":
+        nationStyle = "Japanese and Korean soft delicate facial features";
+        break;
+      default:
+        nationStyle = "natural good looking";
+    }
 
-    const prompt = `A ${gender} human portrait, ${humanAge} years old, ${nationStyle}, face looks exactly like the ${petType} in the picture, ultra realistic, 8K`;
+    // ✅ 提示词 + 国籍（完全隐藏）
+    const prompt = `Real ${gender} human portrait, ${humanAge} years old, ${nationStyle}, cute face, looks exactly like the ${petType} in the reference image, high detail, 8K, realistic, professional photography`;
 
     const openai = new OpenAI({
       apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
       baseURL: process.env.NEXT_PUBLIC_OPENAI_BASE_URL!,
     });
 
-    // ✅ 唯一真正支持【上传图片】的模型
-    const response = await openai.images.edit({
-      image: image,
+    const response = await openai.images.generate({
+      model: "gpt-image-1",
       prompt: prompt,
-      model: "dall-e-2",
-      n: 1,
       size: "1024x1024",
       response_format: "b64_json",
     });
 
+    const base64 = response.data[0].b64_json;
     return NextResponse.json({
-      image: `data:image/png;base64,${response.data[0].b64_json}`,
+      image: `data:image/png;base64,${base64}`,
     });
-
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json(
-      { error: err.message || "Generate failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message || "Generate failed" }, { status: 500 });
   }
 }
