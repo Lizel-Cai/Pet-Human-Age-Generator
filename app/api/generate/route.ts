@@ -1,48 +1,38 @@
+import OpenAI from "openai";
+import { NextResponse } from "next/server";
+
 export async function POST(req: Request) {
   try {
-    const { humanAge, gender, image, petType } = await req.json();
+    const formData = await req.formData();
+    const image = formData.get("image") as File;
+    const prompt = formData.get("prompt") as string;
 
-    const genderText = gender === 'male' ? 'man' : 'woman';
-    const animal = petType === 'dog' ? 'dog' : 'cat';
-
-    const prompt = `
-Ultra realistic human portrait photo,
-${humanAge} years old ${genderText},
-face features exactly same as the uploaded ${animal} photo,
-same eyes, same expression, same face shape,
-natural skin, soft light, 8K, high detail, realistic portrait
-`.trim();
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000);
-
-    const res = await fetch(`${process.env.OMGPT_BASE_URL}/images/generations`, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Authorization': `Bearer ${process.env.OMGPT_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: "gpt-image-1",
-        prompt,
-        image: image,
-        size: "1024x1024",
-        n: 1,
-      }),
-    });
-
-    clearTimeout(timeout);
-    const data = await res.json();
-
-    if (!res.ok) {
-      return Response.json({ error: data.error?.message || "API error" }, { status: 400 });
+    if (!image || !prompt) {
+      return NextResponse.json(
+        { error: "Missing image or prompt" },
+        { status: 400 }
+      );
     }
 
-    return Response.json({ imageUrl: data.data[0].url });
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+      baseURL: process.env.OPENAI_BASE_URL,
+    });
 
-  } catch (e) {
-    console.error("Error:", e);
-    return Response.json({ error: "Generation failed, please try again" }, { status: 500 });
+    const res = await openai.images.edit({
+      model: "gpt-image-1",
+      image,
+      prompt,
+      size: "1024x1024",
+      response_format: "b64_json",
+    });
+
+    const b64 = res.data[0].b64_json;
+    return NextResponse.json({
+      image: `data:image/png;base64,${b64}`,
+    });
+  } catch (err: any) {
+    console.error(err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
