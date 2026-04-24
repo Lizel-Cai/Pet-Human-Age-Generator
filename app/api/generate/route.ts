@@ -1,18 +1,16 @@
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const { humanAge, gender, image, petType } = await req.json();
 
     const genderText = gender === 'male' ? 'man' : 'woman';
     const animal = petType === 'dog' ? 'dog' : 'cat';
 
-    // 强制五官1:1复刻宠物长相
     const prompt = `
 Ultra realistic human portrait photo,
 ${humanAge} years old ${genderText},
-strictly highly consistent facial features with reference ${animal} photo,
-same eye shape, same eyebrow shape, same nose features, same facial contour, same facial expression,
-exactly similar temperament and appearance as pet, natural human skin, soft studio lighting,
-8K ultra HD, sharp detail, high realism, portrait, no deformity, no weird face
+face features exactly same as the uploaded ${animal} photo,
+same eyes, same expression, same face shape,
+natural skin, soft light, 8K, high detail, realistic portrait
 `.trim();
 
     const controller = new AbortController();
@@ -26,10 +24,10 @@ exactly similar temperament and appearance as pet, natural human skin, soft stud
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-image-1', // 匹配你账号可用模型
+        model: "gpt-image-1",
         prompt,
         image: image,
-        size: '1024x1024', // GPT Image1完美支持方形
+        size: "1024x1024",
         n: 1,
       }),
     });
@@ -38,13 +36,13 @@ exactly similar temperament and appearance as pet, natural human skin, soft stud
     const data = await res.json();
 
     if (!res.ok) {
-      return Response.json({ error: data.error?.message }, { status: 400 });
+      return Response.json({ error: data.error?.message || "API error" }, { status: 400 });
     }
 
     return Response.json({ imageUrl: data.data[0].url });
 
   } catch (e) {
-    console.error(e);
-    return Response.json({ error: "Fetch failed" }, { status: 500 });
+    console.error("Error:", e);
+    return Response.json({ error: "Generation failed, please try again" }, { status: 500 });
   }
 }
