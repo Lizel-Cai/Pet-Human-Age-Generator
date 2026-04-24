@@ -11,13 +11,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please upload image and prompt" }, { status: 400 });
     }
 
-    // 🔥 固定使用 gpt-image-1，环境变量读取，不写死 key
+    // 🔥 用带 NEXT_PUBLIC_ 的变量
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-      baseURL: process.env.OPENAI_BASE_URL!,
+      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+      baseURL: process.env.NEXT_PUBLIC_OPENAI_BASE_URL!,
     });
 
-    // ✅ 保持你要的：gpt-image-1 + images.edit
     const response = await openai.images.edit({
       model: "gpt-image-1",
       image: image,
