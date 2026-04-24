@@ -5,21 +5,24 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const image = formData.get("image") as File;
-    const prompt = formData.get("prompt") as string;
+    const gender = formData.get("gender") as string;
+    const humanAge = formData.get("humanAge") as string;
+    const petType = formData.get("petType") as string;
 
-    if (!image || !prompt) {
-      return NextResponse.json({ error: "Please upload image and prompt" }, { status: 400 });
+    if (!image || !gender || !humanAge || !petType) {
+      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    // 🔥 用带 NEXT_PUBLIC_ 的变量
+    // ✅ 提示词完全在后端，外部永远看不到！
+    const prompt = `Real ${gender} human portrait, ${humanAge} years old, cute face, looks exactly like the ${petType} in the reference image, high detail, 8K, realistic, professional photography`;
+
     const openai = new OpenAI({
       apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
       baseURL: process.env.NEXT_PUBLIC_OPENAI_BASE_URL!,
     });
 
-    const response = await openai.images.edit({
+    const response = await openai.images.generate({
       model: "gpt-image-1",
-      image: image,
       prompt: prompt,
       size: "1024x1024",
       response_format: "b64_json",
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       image: `data:image/png;base64,${base64}`,
     });
+
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ error: err.message || "Generate failed" }, { status: 500 });
