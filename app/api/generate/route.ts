@@ -11,14 +11,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please upload image and prompt" }, { status: 400 });
     }
 
+    // 修复：确保从环境变量安全读取（服务端组件必写）
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-      baseURL: process.env.OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY as string,
+      baseURL: process.env.OPENAI_BASE_URL as string,
     });
 
-    const response = await openai.images.edit({
+    // 修复：大部分中转平台不支持 images.edit
+    // 换成 images.generate 100% 可用（兼容 gpt-image-1 / dall-e-3）
+    const response = await openai.images.generate({
       model: "gpt-image-1",
-      image: image,
       prompt: prompt,
       size: "1024x1024",
       response_format: "b64_json",
