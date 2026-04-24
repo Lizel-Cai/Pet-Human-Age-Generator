@@ -8,10 +8,7 @@ export async function POST(req: Request) {
     const prompt = formData.get("prompt") as string;
 
     if (!image || !prompt) {
-      return NextResponse.json(
-        { error: "Missing image or prompt" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Please upload image and prompt" }, { status: 400 });
     }
 
     const openai = new OpenAI({
@@ -19,20 +16,20 @@ export async function POST(req: Request) {
       baseURL: process.env.OPENAI_BASE_URL,
     });
 
-    const res = await openai.images.edit({
+    const response = await openai.images.edit({
       model: "gpt-image-1",
-      image,
-      prompt,
+      image: image,
+      prompt: prompt,
       size: "1024x1024",
       response_format: "b64_json",
     });
 
-    const b64 = res.data[0].b64_json;
+    const base64 = response.data[0].b64_json;
     return NextResponse.json({
-      image: `data:image/png;base64,${b64}`,
+      image: `data:image/png;base64,${base64}`,
     });
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Generate failed" }, { status: 500 });
   }
 }

@@ -1,77 +1,81 @@
-'use client' 
-import { useState, useEffect } from 'react' 
+"use client";
+import { useState, useRef } from "react";
 
 export default function PetToHumanAI() {
-  const [petImg, setPetImg] = useState(null)
-  const [petType, setPetType] = useState('dog')
-  const [petYear, setPetYear] = useState('1')
-  const [petMonth, setPetMonth] = useState('0')
-  const [weight, setWeight] = useState('5')
-  const [gender, setGender] = useState('female')
-  const [loading, setLoading] = useState(false)
-  const [resultImg, setResultImg] = useState(null)
-  const [freeCount, setFreeCount] = useState(3)
+  const [petImg, setPetImg] = useState<string | null>(null);
+  const [petType, setPetType] = useState("dog");
+  const [petYear, setPetYear] = useState("1");
+  const [petMonth, setPetMonth] = useState("0");
+  const [weight, setWeight] = useState("5");
+  const [gender, setGender] = useState("female");
+  const [loading, setLoading] = useState(false);
+  const [resultImg, setResultImg] = useState<string | null>(null);
+  const [freeCount, setFreeCount] = useState(3);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // 年龄换算
   const getHumanAge = () => {
-    const year = Number(petYear) || 0
-    const month = Number(petMonth) || 0
-    const totalPetAge = year + month / 12
-    if (totalPetAge <= 1) return Math.round(totalPetAge * 15)
-    if (totalPetAge <= 2) return Math.round(15 + (totalPetAge - 1) * 9)
-    return Math.round(24 + (totalPetAge - 2) * 4)
-  }
+    const year = Number(petYear) || 0;
+    const month = Number(petMonth) || 0;
+    const totalPetAge = year + month / 12;
+    if (totalPetAge <= 1) return Math.round(totalPetAge * 15);
+    if (totalPetAge <= 2) return Math.round(15 + (totalPetAge - 1) * 9);
+    return Math.round(24 + (totalPetAge - 2) * 4);
+  };
 
-  // 上传图片
-  const handleUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setPetImg(reader.result)
-    reader.readAsDataURL(file)
-  }
+  // 上传图片预览
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPetImg(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
-  // ========== 核心：上传宠物图 → 生成同款长相真人 ==========
+  // ========== 修复版：用 FormData 正确上传图片 ==========
   const generate = async () => {
-    if (!petImg) return alert('Please upload a photo first')
-    if (freeCount <= 0) return alert('Free limit reached')
+    if (!petImg) return alert("Please upload a photo first");
+    if (freeCount <= 0) return alert("Free limit reached");
 
-    setLoading(true)
-    const humanAge = getHumanAge()
+    setLoading(true);
+    const humanAge = getHumanAge();
 
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          petType,
-          petAge: Number(petYear) + Number(petMonth)/12,
-          weight: Number(weight) || 0,
-          humanAge,
-          gender,
-          image: petImg, // 传给AI：宠物图片
-        })
-      })
-      const data = await res.json()
-      if (data.imageUrl) {
-        setResultImg(data.imageUrl)
-        setFreeCount(freeCount - 1)
+      // 1. 把预览图转成 File 对象
+      const res = await fetch(petImg);
+      const blob = await res.blob();
+      const imageFile = new File([blob], "pet.png", { type: "image/png" });
+
+      // 2. 构建正确的 FormData（接口必须用这个）
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append(
+        "prompt",
+        `Real human portrait, ${gender}, ${humanAge} years old, face looks exactly like the ${petType} in the picture, high detail, 8K, realistic`
+      );
+
+      // 3. 发送请求（不要手动加 Content-Type！）
+      const apiRes = await fetch("/api/generate", {
+        method: "POST",
+        body: formData, // 只传 FormData，浏览器会自动加边界
+      });
+
+      const data = await apiRes.json();
+
+      if (data.image) {
+        setResultImg(data.image);
+        setFreeCount(freeCount - 1);
       } else {
-        alert(data.error || 'Generate failed')
+        alert(data.error || "Generate failed");
       }
     } catch (e) {
-      console.error(e)
-      alert('Generate failed')
+      console.error(e);
+      alert("Generate failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false)
-  }
+  };
 
-  // 广告
-  useEffect(() => {
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}) } catch (e) {}
-  }, [])
-
-  // ========== 样式完全和你原版一样 ==========
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4">
       <div className="max-w-xl mx-auto">
@@ -81,25 +85,53 @@ export default function PetToHumanAI() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center">
-            <input type="file" accept="image/*" onChange={handleUpload} className="mb-4" />
-            {petImg && <img src={petImg} className="w-48 h-48 object-cover rounded-xl mx-auto shadow" />}
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer"
+            onClick={() => fileRef.current?.click()}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="hidden"
+            />
+            <p className="text-gray-500 mb-3">Click to upload pet photo</p>
+            {petImg && (
+              <img
+                src={petImg}
+                className="w-48 h-48 object-cover rounded-xl mx-auto shadow"
+                alt="pet"
+              />
+            )}
           </div>
 
           <div className="space-y-4">
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petType} onChange={(e) => setPetType(e.value)}>
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petType}
+              onChange={(e) => setPetType(e.target.value)}
+            >
               <option value="dog">Dog</option>
               <option value="cat">Cat</option>
             </select>
 
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petYear} onChange={(e) => setPetYear(e.target.value)}>
-              {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(y => (
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petYear}
+              onChange={(e) => setPetYear(e.target.value)}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((y) => (
                 <option key={y} value={String(y)}>{y} Years</option>
               ))}
             </select>
 
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petMonth} onChange={(e) => setPetMonth(e.target.value)}>
-              {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => (
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petMonth}
+              onChange={(e) => setPetMonth(e.target.value)}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((m) => (
                 <option key={m} value={String(m)}>{m} Months</option>
               ))}
             </select>
@@ -114,7 +146,11 @@ export default function PetToHumanAI() {
               step="0.1"
             />
 
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={gender} onChange={(e) => setGender(e.target.value)}>
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
               <option value="female">Female</option>
               <option value="male">Male</option>
             </select>
@@ -131,27 +167,17 @@ export default function PetToHumanAI() {
             disabled={loading || !petImg || freeCount <= 0}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl text-lg font-medium disabled:bg-gray-300"
           >
-            {loading ? 'Generating...' : 'Generate Human Portrait'}
+            {loading ? "Generating..." : "Generate Human Portrait"}
           </button>
 
           {resultImg && (
             <div className="mt-6">
               <p className="font-medium mb-2 text-center">Your AI Result</p>
-              <img src={resultImg} className="w-full rounded-xl shadow-lg" />
+              <img src={resultImg} className="w-full rounded-xl shadow-lg" alt="result" />
             </div>
           )}
-
-          <div className="mt-8">
-            <ins className="adsbygoogle"
-              style={{ display: 'block' }}
-              data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-              data-ad-slot="XXXXXXXXXX"
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            />
-          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
