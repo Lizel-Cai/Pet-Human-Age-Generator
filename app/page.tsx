@@ -8,11 +8,14 @@ export default function PetToHumanAI() {
   const [petMonth, setPetMonth] = useState("0");
   const [weight, setWeight] = useState("5");
   const [gender, setGender] = useState("female");
+  const [nation, setNation] = useState("eastAsia");
+
   const [loading, setLoading] = useState(false);
   const [resultImg, setResultImg] = useState<string | null>(null);
   const [freeCount, setFreeCount] = useState(3);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 宠物年龄换算人类年龄
   const getHumanAge = () => {
     const year = Number(petYear) || 0;
     const month = Number(petMonth) || 0;
@@ -22,6 +25,7 @@ export default function PetToHumanAI() {
     return Math.round(24 + (totalPetAge - 2) * 4);
   };
 
+  // 上传图片
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -30,6 +34,7 @@ export default function PetToHumanAI() {
     reader.readAsDataURL(file);
   };
 
+  // 生成人像
   const generate = async () => {
     if (!petImg) return alert("Please upload a photo first");
     if (freeCount <= 0) return alert("Free limit reached");
@@ -44,11 +49,10 @@ export default function PetToHumanAI() {
 
       const formData = new FormData();
       formData.append("image", imageFile);
-      
-      // ✅ 前端只传参数，不传提示词！
       formData.append("gender", gender);
       formData.append("humanAge", humanAge.toString());
       formData.append("petType", petType);
+      formData.append("nation", nation);
 
       const apiRes = await fetch("/api/generate", {
         method: "POST",
@@ -58,7 +62,7 @@ export default function PetToHumanAI() {
       const data = await apiRes.json();
       if (data.image) {
         setResultImg(data.image);
-        setFreeCount(freeCount - 1);
+        setFreeCount(prev => prev - 1);
       } else {
         alert(data.error || "Generate failed");
       }
@@ -79,43 +83,116 @@ export default function PetToHumanAI() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer" onClick={() => fileRef.current?.click()}>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+          {/* 上传区域 */}
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer"
+            onClick={() => fileRef.current?.click()}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="hidden"
+            />
             <p className="text-gray-500 mb-3">Click to upload pet photo</p>
-            {petImg && <img src={petImg} className="w-48 h-48 object-cover rounded-xl mx-auto shadow" alt="pet" />}
+            {petImg && (
+              <img
+                src={petImg}
+                className="w-48 h-48 object-cover rounded-xl mx-auto shadow"
+                alt="pet"
+              />
+            )}
           </div>
 
+          {/* 表单选项 */}
           <div className="space-y-4">
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petType} onChange={(e) => setPetType(e.target.value)}>
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petType}
+              onChange={(e) => setPetType(e.target.value)}
+            >
               <option value="dog">Dog</option>
               <option value="cat">Cat</option>
             </select>
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petYear} onChange={(e) => setPetYear(e.target.value)}>
-              {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(y => <option key={y} value={String(y)}>{y} Years</option>)}
+
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petYear}
+              onChange={(e) => setPetYear(e.target.value)}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((y) => (
+                <option key={y} value={String(y)}>{y} Years</option>
+              ))}
             </select>
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={petMonth} onChange={(e) => setPetMonth(e.target.value)}>
-              {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => <option key={m} value={String(m)}>{m} Months</option>)}
+
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={petMonth}
+              onChange={(e) => setPetMonth(e.target.value)}
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((m) => (
+                <option key={m} value={String(m)}>{m} Months</option>
+              ))}
             </select>
-            <input type="number" placeholder="Weight (kg)" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full p-4 rounded-xl border bg-gray-50" min="0" step="0.1" />
-            <select className="w-full p-4 rounded-xl border bg-gray-50" value={gender} onChange={(e) => setGender(e.target.value)}>
+
+            <input
+              type="number"
+              placeholder="Weight (kg)"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              min="0"
+              step="0.1"
+            />
+
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            >
               <option value="female">Female</option>
               <option value="male">Male</option>
             </select>
+
+            {/* 新增：国籍/人种选择 */}
+            <select
+              className="w-full p-4 rounded-xl border bg-gray-50"
+              value={nation}
+              onChange={(e) => setNation(e.target.value)}
+            >
+              <option value="eastAsia">East Asian</option>
+              <option value="european">European</option>
+              <option value="japanKorea">Japanese & Korean</option>
+            </select>
+
             <div className="bg-blue-50 text-blue-700 font-semibold p-4 rounded-xl text-center">
               Human Age: {getHumanAge()} Years Old
             </div>
           </div>
 
-          <div className="text-center text-sm text-gray-500">Free tries left today: {freeCount}</div>
+          <div className="text-center text-sm text-gray-500">
+            Free tries left today: {freeCount}
+          </div>
 
-          <button onClick={generate} disabled={loading || !petImg || freeCount <= 0} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl text-lg font-medium disabled:bg-gray-300">
-            {loading ? "Generating..." : "Generate Human Portrait"}
+          {/* 生成按钮 + Loading 状态 */}
+          <button
+            onClick={generate}
+            disabled={loading || !petImg || freeCount <= 0}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl text-lg font-medium disabled:opacity-60 transition-all"
+          >
+            {loading ? "Generating, please wait..." : "Generate Human Portrait"}
           </button>
 
+          {/* 结果展示 */}
           {resultImg && (
             <div className="mt-6">
               <p className="font-medium mb-2 text-center">Your AI Result</p>
-              <img src={resultImg} className="w-full rounded-xl shadow-lg" alt="result" />
+              <img 
+                src={resultImg} 
+                className="w-full rounded-xl shadow-lg" 
+                alt="AI Human Result" 
+              />
             </div>
           )}
         </div>
