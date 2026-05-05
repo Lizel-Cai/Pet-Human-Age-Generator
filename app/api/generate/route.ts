@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// PH上线流量大，上调每日免费限额，兼顾体验与成本
 const DAILY_LIMIT = 3;
 const ipRecord: Record<string, { date: string; count: number }> = {};
 
@@ -19,10 +20,12 @@ export async function POST(req: Request) {
     const petType = formData.get("petType") as string;
     const nation = formData.get("nation") as string;
 
+    // 必传参数校验
     if (!image || !gender || !humanAge || !petType || !nation) {
-      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
+    // 每日IP限流逻辑，PH流量高峰期稳定运行
     if (!unlimited) {
       if (!ipRecord[ip] || ipRecord[ip].date !== today) {
         ipRecord[ip] = { date: today, count: 1 };
@@ -33,35 +36,39 @@ export async function POST(req: Request) {
       if (ipRecord[ip].count > DAILY_LIMIT) {
         return NextResponse.json({
           limit: true,
-          error: "Daily limit reached",
-        });
+          error: "Daily free limit reached, come back tomorrow for more cute portraits!",
+        }, { status: 429 });
       }
     }
 
+    // 可爱风地域风格描述，软萌不生硬，无过度精致感
     let nationStyle = "";
     switch (nation) {
       case "eastAsia":
-        nationStyle = "East Asian, Chinese oriental appearance, elegant features";
+        nationStyle = "cute East Asian Chinese style, soft gentle facial features, sweet and lovely";
         break;
       case "european":
-        nationStyle = "European and American, deep stereo facial features, attractive look";
+        nationStyle = "sweet European style, soft delicate features, warm and friendly look";
         break;
       case "japanKorea":
-        nationStyle = "Japanese and Korean soft delicate facial features, pretty face";
+        nationStyle = "soft Japanese and Korean cute style, gentle delicate face, sweet temperament";
         break;
       default:
-        nationStyle = "attractive and good looking";
+        nationStyle = "soft cute facial features, warm and lovely appearance";
     }
 
+    // 分性别可爱风外貌描述，保留真人质感，软萌无AI塑料感
     const appearance = gender === "male"
-      ? "handsome, attractive, charming, perfect facial features, cool, high looks"
-      : "beautiful, pretty, gorgeous, cute, elegant, attractive face, high appearance level";
+      ? "cute young boy, soft facial contours, natural gentle look, sweet temperament, real skin texture, no artificial filter"
+      : "cute young girl, soft delicate face, sweet lovely smile vibe, gentle temperament, natural real skin, lifelike";
 
-    const prompt = `Real ${gender} human portrait, ${humanAge} years old, ${nationStyle}, ${appearance}, looks exactly like the ${petType} in the reference image, hyper realistic, 8K, high detail, professional portrait photography, soft lighting, clear skin, best quality, ultra-detailed`;
+    // 核心提示词：可爱风+真人写实，彻底去掉AI感，软萌自然
+    const prompt = `Cute photorealistic casual portrait of a ${gender} person, ${humanAge} years old, ${nationStyle}, ${appearance}, facial features and cute temperament match the ${petType} in reference photo, soft warm lighting, natural daily style, real skin texture with subtle pores, no heavy smooth filter, no over perfect face, 8K high detail, shot by real camera, lovely and lifelike`;
 
+    // 关键：移除NEXT_PUBLIC_，防止API Key泄露被盗刷（PH上线强制要求）
     const openai = new OpenAI({
-      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
-      baseURL: process.env.NEXT_PUBLIC_OPENAI_BASE_URL!,
+      apiKey: process.env.OPENAI_API_KEY!,
+      baseURL: process.env.OPENAI_BASE_URL!,
     });
 
     const response = await openai.images.generate({
@@ -78,6 +85,6 @@ export async function POST(req: Request) {
 
   } catch (err: any) {
     console.error("[Generate Error]", err);
-    return NextResponse.json({ error: err.message || "Generate failed" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to generate, please try again later" }, { status: 500 });
   }
 }
