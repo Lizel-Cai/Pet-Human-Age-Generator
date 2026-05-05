@@ -26,9 +26,7 @@ export default function PetToHumanAI() {
     const storeDate = localStorage.getItem("petHumanDate");
     const storeUsed = Number(localStorage.getItem("petHumanUsed") || "0");
     
-    // 统一解锁字段
     const isUnlimited = localStorage.getItem("pet2human_unlimited") === "true";
-
     setUnlimited(isUnlimited);
 
     if (isUnlimited) {
@@ -45,6 +43,13 @@ export default function PetToHumanAI() {
       setFreeCount(left < 0 ? 0 : left);
       if (left <= 0) setShowPayModal(true);
     }
+  }, []);
+
+  // ✅ 只在组件挂载后加载一次广告（修复报错核心）
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {}
   }, []);
 
   const useOneCount = () => {
@@ -120,91 +125,119 @@ export default function PetToHumanAI() {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-sky-50 via-pink-50 to-purple-50 py-10 px-4 transition-opacity duration-1000 ${mounted ? "opacity-100" : "opacity-0"}`}>
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600">🐾 Pet To Human AI</h1>
-          <p className="text-purple-500 mt-2 text-sm">Turn your lovely pet into a cute human~</p>
+
+      {/* ====================== 左右两侧广告（电脑显示，手机隐藏） ====================== */}
+      <div className="flex justify-center items-start max-w-6xl mx-auto gap-4">
+        
+        {/* 左侧广告 */}
+        <div className="hidden xl:block w-[160px] sticky top-10">
+          <ins
+            className="adsbygoogle"
+            style={{ display: "inline-block", width: "160px", height: "600px" }}
+            data-ad-client="ca-pub-9524124855358338"
+            data-ad-slot="2584579157"
+          ></ins>
         </div>
 
-        <div className="bg-white rounded-[36px] shadow-xl p-6 space-y-5 overflow-hidden">
-          <div className="border-2 border-dashed border-indigo-200 rounded-3xl p-5 text-center cursor-pointer bg-indigo-50 hover:border-indigo-400 hover:bg-indigo-100 transition-all duration-500 animate-pulse" onClick={() => fileRef.current?.click()}>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-            <p className="text-indigo-400 text-sm mb-3">🐶 Click to upload pet photo</p>
-            {petImg && <img src={petImg} className="w-36 h-36 object-cover rounded-2xl mx-auto shadow-md hover:scale-105 transition-transform duration-300" alt="pet" />}
+        {/* 中间主体内容 */}
+        <div className="max-w-md w-full mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-indigo-600">🐾 Pet To Human AI</h1>
+            <p className="text-purple-500 mt-2 text-sm">Turn your lovely pet into a cute human~</p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Pet Type</label>
-              <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petType} onChange={(e) => setPetType(e.target.value)}>
-                <option value="dog">🐶 Dog</option>
-                <option value="cat">🐱 Cat</option>
-              </select>
+          <div className="bg-white rounded-[36px] shadow-xl p-6 space-y-5 overflow-hidden">
+            <div className="border-2 border-dashed border-indigo-200 rounded-3xl p-5 text-center cursor-pointer bg-indigo-50 hover:border-indigo-400 hover:bg-indigo-100 transition-all duration-500 animate-pulse" onClick={() => fileRef.current?.click()}>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+              <p className="text-indigo-400 text-sm mb-3">🐶 Click to upload pet photo</p>
+              {petImg && <img src={petImg} className="w-36 h-36 object-cover rounded-2xl mx-auto shadow-md hover:scale-105 transition-transform duration-300" alt="pet" />}
             </div>
 
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Age (Years)</label>
-              <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petYear} onChange={(e) => setPetYear(e.target.value)}>
-                {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(y => (<option key={y} value={String(y)}>{y} Years</option>))}
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Pet Type</label>
+                <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petType} onChange={(e) => setPetType(e.target.value)}>
+                  <option value="dog">🐶 Dog</option>
+                  <option value="cat">🐱 Cat</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Age (Years)</label>
+                <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petYear} onChange={(e) => setPetYear(e.target.value)}>
+                  {[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(y => (<option key={y} value={String(y)}>{y} Years</option>))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Age (Months)</label>
+                <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petMonth} onChange={(e) => setPetMonth(e.target.value)}>
+                  {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => (<option key={m} value={String(m)}>{m} Months</option>))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Weight (kg)</label>
+                <input type="number" placeholder="Weight (kg)" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" min="0" step="0.1" />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Human Gender</label>
+                <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="female">Girl 🎀</option>
+                  <option value="male">Boy 🎩</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 ml-1">Appearance Style</label>
+                <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={nation} onChange={(e) => setNation(e.target.value)}>
+                  <option value="eastAsia">East Asian 🏮</option>
+                  <option value="european">European 🎌</option>
+                  <option value="japanKorea">Japan & Korea 🌸</option>
+                </select>
+              </div>
+
+              <div className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 p-3 rounded-2xl text-sm font-semibold text-center shadow-sm">
+                🎂 Human Age: {getHumanAge()} Years Old
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Age (Months)</label>
-              <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={petMonth} onChange={(e) => setPetMonth(e.target.value)}>
-                {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => (<option key={m} value={String(m)}>{m} Months</option>))}
-              </select>
-            </div>
+            {!unlimited ? (
+              <div className="text-center text-xs text-purple-400">
+                🎁 Free tries left today: {freeCount}
+              </div>
+            ) : (
+              <div className="text-center text-xs text-green-600 font-semibold">
+                ✨ UNLOCKED: Unlimited generations
+              </div>
+            )}
 
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Weight (kg)</label>
-              <input type="number" placeholder="Weight (kg)" value={weight} onChange={(e) => setWeight(e.target.value)} className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" min="0" step="0.1" />
-            </div>
+            <button onClick={generate} disabled={loading || !petImg} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3.5 rounded-2xl text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:scale-100 shadow-lg hover:shadow-indigo-200">
+              {loading ? <span className="inline-flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span> Generating...</span> : "🐾 Generate My Pet Human"}
+            </button>
 
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Human Gender</label>
-              <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={gender} onChange={(e) => setGender(e.target.value)}>
-                <option value="female">Girl 🎀</option>
-                <option value="male">Boy 🎩</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500 ml-1">Appearance Style</label>
-              <select className="w-full p-3 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm focus:ring-2 focus:ring-indigo-300 outline-none transition-all" value={nation} onChange={(e) => setNation(e.target.value)}>
-                <option value="eastAsia">East Asian 🏮</option>
-                <option value="european">European 🎌</option>
-                <option value="japanKorea">Japan & Korea 🌸</option>
-              </select>
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 p-3 rounded-2xl text-sm font-semibold text-center shadow-sm">
-              🎂 Human Age: {getHumanAge()} Years Old
-            </div>
+            {resultImg && (
+              <div className="mt-4 opacity-100 translate-y-0 transition-all duration-700">
+                <p className="font-medium text-sm text-center text-indigo-600">Your Lovely Result ✨</p>
+                <img src={resultImg} className="w-full rounded-3xl shadow-lg mt-2 hover:scale-[1.02] transition-transform duration-500" alt="Result" />
+              </div>
+            )}
           </div>
-
-          {!unlimited ? (
-            <div className="text-center text-xs text-purple-400">
-              🎁 Free tries left today: {freeCount}
-            </div>
-          ) : (
-            <div className="text-center text-xs text-green-600 font-semibold">
-              ✨ UNLOCKED: Unlimited generations
-            </div>
-          )}
-
-          <button onClick={generate} disabled={loading || !petImg} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3.5 rounded-2xl text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:scale-100 shadow-lg hover:shadow-indigo-200">
-            {loading ? <span className="inline-flex items-center gap-2"><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span> Generating...</span> : "🐾 Generate My Pet Human"}
-          </button>
-
-          {resultImg && (
-            <div className="mt-4 opacity-100 translate-y-0 transition-all duration-700">
-              <p className="font-medium text-sm text-center text-indigo-600">Your Lovely Result ✨</p>
-              <img src={resultImg} className="w-full rounded-3xl shadow-lg mt-2 hover:scale-[1.02] transition-transform duration-500" alt="Result" />
-            </div>
-          )}
         </div>
+
+        {/* 右侧广告 */}
+        <div className="hidden xl:block w-[160px] sticky top-10">
+          <ins
+            className="adsbygoogle"
+            style={{ display: "inline-block", width: "160px", height: "600px" }}
+            data-ad-client="ca-pub-9524124855358338"
+            data-ad-slot="2584579157"
+          ></ins>
+        </div>
+
       </div>
+      {/* ====================== 广告区域结束 ====================== */}
 
       {showPayModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
@@ -227,10 +260,9 @@ export default function PetToHumanAI() {
                 💰 Unlock Now
               </a>
 
-              {/* 提示：付款后访问解锁页 */}
               <p className="text-xs text-center text-gray-400 mt-1">
                 After payment, visit: <br/>
-                <span className="text-purple-500 font-medium">https://pet2human.vercel.app/success</span>
+                <span className="text-purple-500 font-medium">/success</span>
               </p>
 
               <button onClick={() => setShowPayModal(false)} className="w-full bg-gray-100 text-gray-600 py-3 rounded-2xl font-medium">

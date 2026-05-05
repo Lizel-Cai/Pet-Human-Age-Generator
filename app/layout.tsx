@@ -1,23 +1,30 @@
-import Script from 'next/script'
-import './globals.css'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import Script from "next/script";
+import "./globals.css";
 
-export const metadata = {
-  title: 'Pet To Human AI - Generate Human Lookalike Portrait',
-  description: 'Upload your cat or dog photo, get a human portrait with equivalent age.',
-}
+const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({ children }) {
+export const metadata: Metadata = {
+  title: "Pet To Human AI",
+  description: "Turn pet into human portrait AI",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <head>
-        {/* Google AdSense 代码（你审核通过后替换） */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
+
+      {/* AdSense 全局脚本 */}
+      <Script
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-952412485538338"
+        crossOrigin="anonymous"
+      />
     </html>
-  )
+  );
 }
